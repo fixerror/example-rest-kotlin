@@ -4,40 +4,31 @@ package main
 /**
  * Created by FixError on 02.11.2016.
  */
+import org.slf4j.LoggerFactory
 import io.netty.handler.codec.http.HttpMethod
 import org.wasabifx.wasabi.app.AppConfiguration
 import org.wasabifx.wasabi.app.AppServer
-import org.wasabifx.wasabi.interceptors.enableCORS
-import org.wasabifx.wasabi.interceptors.serveStaticFilesFromFolder
-import org.wasabifx.wasabi.interceptors.serveErrorsFromFolder
-import org.wasabifx.wasabi.interceptors.serveFavIconAs
+import org.wasabifx.wasabi.interceptors.*
 import org.wasabifx.wasabi.protocol.http.CORSEntry
 import java.io.File
 
 //java -cp web-restr-0.0.1-SNAPSHOT-bin.jar main.MainKt
 fun main(args: Array<String>) {
-    val headers = hashMapOf(
-            "User-Agent" to "test-client",
-            "Connection" to "close",
-            "Cache-Control" to "max-age=0",
-            "Accept" to "text/html,application/xhtml+xml;q=0.4,application/xml",
-            "Accept-Encoding" to "gzip,deflate,sdch",
-            "Accept-Language" to "en-US,en;q=0.8",
-            "Accept-Charset" to "ISO-8859-1,utf-8;q=0.7,*"
-
-    )
-
+    val Log = LoggerFactory.getLogger("MainKt.class")
     val server = AppServer(AppConfiguration(port = 8080, enableLogging = true));
 
-    server.serveFavIconAs(".${File.separatorChar}src${File.separatorChar}main${File.separatorChar}public${File.separatorChar}");
-    server.serveStaticFilesFromFolder(".${File.separatorChar}src${File.separatorChar}main${File.separatorChar}public${File.separatorChar}");
-    server.serveErrorsFromFolder(".${File.separatorChar}src${File.separatorChar}main${File.separatorChar}public${File.separatorChar}");
+    val settingPath = ".${File.separatorChar}src${File.separatorChar}main${File.separatorChar}public${File.separatorChar}"
 
-    print("${File.separatorChar}error.html")
+    server.serveFavIconAs(settingPath + "favicon.ico");
+    server.serveStaticFilesFromFolder(settingPath);
+    server.serveErrorsFromFolder(settingPath);
+    server.logRequests()
+
+    //methods = setOf(HttpMethod.GET, HttpMethod.POST)
     server.enableCORS(arrayListOf(
             CORSEntry(path = "/*",
                       origins ="*",
-                      methods = CORSEntry.ALL_AVAILABLE_METHODS,
+                      methods = setOf(HttpMethod.GET, HttpMethod.POST),
                       headers ="Origin, X-Requested-With, Content-Type, Accept",
                       credentials="",
                       preflightMaxAge=""),
@@ -46,22 +37,15 @@ fun main(args: Array<String>) {
       )
     )
 
-   /* server.get("/", {
-             *//* val log = Log()
-                log.info("URI requested is ${request.uri}")*//*
-                print("log")
-                next()
-            }, {
-                response.send("Hello World!", "application/json")
-            }, {
-                headers
-            }
-        )*/
-
     server.get("/", {
-        response.send("Hello World!","text/html" )
-    }
-    )
+             Log.info("URI requested is ${request.uri}")
+             next()
+            }, {
+                response.statusCode =200;
+                response.send("Hello World!", "application/json")
+            }
+        )
+
 
     server.start()
 }
